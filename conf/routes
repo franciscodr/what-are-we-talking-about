@@ -5,13 +5,11 @@
 # ~~~~
 
 # Single endpoint for serving AngularJS
-GET     /                           @controllers.Application.index
+GET     /                               @controllers.Application.index
 
 # Alchemy API
-POST    /analize-web-page           @controllers.Alchemy.analizeWepPage
-
-# Alchemy API
-POST    /actors                     @controllers.Alchemy.actors
+POST    /analize-web-page               @controllers.Alchemy.analizeWebPage
+GET    /web-page-request                @controllers.Alchemy.getWebPageRequest
 
 # Map static resources from the /public folder to the /assets URL path
-GET     /assets/*file               controllers.Assets.at(path="/public", file)
+GET     /assets/*file                   controllers.Assets.at(path="/public", file)

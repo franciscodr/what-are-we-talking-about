@@ -12,7 +12,7 @@ alchemyControllers.controller('AnalizeWebPageController', ['$scope', '$http', '$
     $scope.processForm = function() {
         $scope.errorMessage = null;
         $scope.fetchingData = true;
-        $scope.webPageTextAnalysisValues = null;
+        $scope.webPageTextAnalysis = null;
 
         $http.post('/analize-web-page',$scope.formData)
             .success(function(data) {
@@ -24,4 +24,20 @@ alchemyControllers.controller('AnalizeWebPageController', ['$scope', '$http', '$
                 $scope.fetchingData = false;
             });
     };
+  }]);
+
+alchemyControllers.controller('WebPageRequestController', ['$scope', '$http', '$log',
+  function ($scope, $http, $log) {
+    $log.debug("Constructing WebPageRequestController")
+    $log.debug("Getting web page request list")
+    $scope.errorMessage = null;
+    $scope.webPageRequestList = null;
+
+    $http.get('/web-page-request')
+        .success(function(data) {
+            $scope.webPageRequestList = data;
+        })
+        .error(function(data, status, headers, config) {
+            $scope.errorMessage = data;
+        });
   }]);

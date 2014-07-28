@@ -1,150 +1,86 @@
 package controllers
 
+import actors.alchemy.{PageTitleActor, PageTextActor, RankedKeywordsActor, RankedNamedEntitiesActor}
 import actors.{UrlInfo, AlchemyActor}
 import akka.actor.Props
 import akka.pattern.ask
 import akka.util.Timeout
-import org.slf4j.{Logger, LoggerFactory}
+import org.joda.time.DateTime
 import play.api.libs.concurrent.Akka
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.json._
-import play.api.libs.ws.WS
 import play.api.mvc._
 import play.api.Play.current
+import play.modules.reactivemongo.MongoController
+import play.modules.reactivemongo.json.collection.JSONCollection
+import reactivemongo.api.Cursor
 import scala.concurrent.duration._
 
 import scala.concurrent.Future
 
-class Alchemy extends Controller {
+class Alchemy extends Controller with MongoController {
+
+  def collection: JSONCollection = db.collection[JSONCollection]("webPageRequestLog")
 
   private val alchemyActor = Akka.system.actorOf(Props[AlchemyActor], name = java.util.UUID.randomUUID().toString)
-  implicit val timeout = Timeout(10 seconds)
+  private val pageTextActor = Akka.system.actorOf(Props[PageTextActor], name = java.util.UUID.randomUUID().toString)
+  private val pageTitleActor = Akka.system.actorOf(Props[PageTitleActor], name = java.util.UUID.randomUUID().toString)
+  private val rankedKeywordsActor = Akka.system.actorOf(Props[RankedKeywordsActor], name = java.util.UUID.randomUUID().toString)
+  private val rankedNamedEntitiesActor = Akka.system.actorOf(Props[RankedNamedEntitiesActor], name = java.util.UUID.randomUUID().toString)
+
+  implicit val timeout = Timeout(30 seconds)
 
   import models._
   import models.AlchemyJsonFormats._
 
-  def processEntities(url: String): Future[EntitiesResponse] = {
-    WS.url("http://access.alchemyapi.com/calls/url/URLGetRankedNamedEntities").withQueryString(
-      "apikey" -> "95986d748333af9be9ecc31705253e7a61142d58",
-      "url" -> url,
-      "outputMode" -> "json").get() map {
-      response =>
-        response.json.validate[EntitiesResponse] match{
-          case JsSuccess(entitiesResponse, _) => entitiesResponse
-          case JsError(e) => throw new RuntimeException(e.toString())
-        }
-    }
+  def getWebPageContentAnalysis(url: String): Future[WebPageTextAnalysis] = {
+    val futureEntities = (rankedNamedEntitiesActor ? RequestInfo(url))
+    val futureKeywords = (rankedKeywordsActor ? RequestInfo(url))
+    val futureTitle = (pageTitleActor ? RequestInfo(url))
+    val futureText = (pageTextActor ? RequestInfo(url))
+
+    for {
+      entities <- futureEntities.mapTo[Seq[Entities]]
+      keywords <- futureKeywords.mapTo[Seq[Keywords]]
+      text <- futureText.mapTo[String]
+      title <- futureTitle.mapTo[String]
+    } yield WebPageTextAnalysis(url,title, text,entities,keywords)
   }
 
-  def processKeywords(url: String): Future[KeywordsResponse] = {
-    WS.url("http://access.alchemyapi.com/calls/url/URLGetRankedKeywords").withQueryString(
-      "apikey" -> "95986d748333af9be9ecc31705253e7a61142d58",
-      "url" -> url,
-      "outputMode" -> "json").get() map {
-      response =>
-        response.json.validate[KeywordsResponse] match{
-          case JsSuccess(keywordsResponse, _) => keywordsResponse
-          case JsError(e) => throw new RuntimeException(e.toString())
-        }
-    }
+  def saveWebPageRequest(webPageTextAnalysis: WebPageTextAnalysis) {
+    val webPageRequest = WebPageRequest(DateTime.now(),webPageTextAnalysis.url,webPageTextAnalysis)
+    collection.insert(webPageRequest)
   }
 
-  def processText(url: String): Future[TextResponse] = {
-    WS.url("http://access.alchemyapi.com/calls/url/URLGetText").withQueryString(
-      "apikey" -> "95986d748333af9be9ecc31705253e7a61142d58",
-      "url" -> url,
-      "outputMode" -> "json").get() map {
-      response =>
-        response.json.validate[TextResponse] match{
-          case JsSuccess(textResponse, _) => textResponse
-          case JsError(e) => throw new RuntimeException(e.toString())
-        }
-    }
-  }
-
-  def processInfo(url: String, textResponse : TextResponse, entitiesResponse : EntitiesResponse, keywordsResponse : KeywordsResponse): Future[WebPageTextAnalysis] = {
-    val title = textResponse match {
-      case TextResponse(status, None, usage, url, text) => text
-      case TextResponse(_, Some(statusInfo), _, _, _) => throw new RuntimeException(statusInfo)
-      case _ => throw new RuntimeException()
-    }
-
-    val entities = entitiesResponse match {
-      case EntitiesResponse(status, None, usage, url, language, Some(entities)) => entities.sortWith((a,b) => a.count > b.count )
-      case EntitiesResponse(_, Some(statusInfo), _, _, _, _) => throw new RuntimeException(statusInfo)
-    }
-
-    val keywords = keywordsResponse match {
-      case KeywordsResponse(status, None, usage, url, language, Some(keywords)) => keywords.sortWith((a,b) => a.text < b.text )
-      case KeywordsResponse(_, Some(statusInfo), _, _, _, _) => throw new RuntimeException(statusInfo)
-    }
-
-    Future.successful(new WebPageTextAnalysis(url, title, entities, keywords))
-  }
-
-  def analizeWepPage = Action.async(parse.json) {
+  def analizeWebPage = Action.async(parse.json) {
     request =>
-      request.body.validate[AnalysisRequest].map {
-        analysisRequest =>
-          play.api.Logger.info("UrlList: " + analysisRequest.url)
+      request.body.validate[RequestInfo].map {
+        requestInfo =>
+          play.api.Logger.info("UrlList: " + requestInfo.url)
 
-          val responses = for {
-            url <- analysisRequest.url split "," toSeq
-          } yield {
-            play.api.Logger.info("Getting info...")
-            (alchemyActor ? UrlInfo(url)).mapTo[WebPageTextAnalysis]
+          val urlList = requestInfo.url split "," toSeq
+
+          val forResult = for {
+            url <- urlList
+          } yield getWebPageContentAnalysis(url)
+
+          val futureResult = Future.sequence(forResult)
+          futureResult map {
+            result =>
+              for {
+                webPageTextAnalysis <- result
+              } yield saveWebPageRequest(webPageTextAnalysis)
+
+              Ok(Json.toJson(WebPageTextAnalysisList(result)))
           }
-
-          val result = Future.sequence(responses)
-          val futureWebPageTextAnalysisSeq = result map {
-            wepPageTextAnalysisSeq =>
-              play.api.Logger.info("Processing info...")
-              wepPageTextAnalysisSeq
-          }
-
-          val futureValues = futureWebPageTextAnalysisSeq map { webPageTextAnalysisSeq => WebPageTextAnalysisList(webPageTextAnalysisSeq)}
-          futureValues map { values => Ok(Json.toJson(values))}
-
       }.getOrElse(Future.successful(BadRequest("Invalid json")))
-/*    request =>
-      request.body.validate[AnalysisRequest].map {
-        analysisRequest =>
-          val result = for {
-            textResponse <- processText(analysisRequest.url)
-            entitiesResponse <- processEntities(analysisRequest.url)
-            keywordsResponse <- processKeywords(analysisRequest.url)
-            webPageTextAnalysis <- processInfo(analysisRequest.url, textResponse, entitiesResponse, keywordsResponse)
-          } yield Ok(Json.toJson(webPageTextAnalysis))
-
-          result recover {
-            case e: RuntimeException => Conflict(e.getMessage())
-          }
-      }.getOrElse(Future.successful(BadRequest("Invalid json")))*/
   }
 
-  def actors = Action.async(parse.json) {
-    request =>
-      request.body.validate[AnalysisRequest].map {
-        analysisRequest =>
-          play.api.Logger.info("UrlList: " + analysisRequest.url)
+  def getWebPageRequest = Action.async {
 
-          val responses = for {
-            url <- analysisRequest.url split "," toSeq
-          } yield {
-            play.api.Logger.info("Getting info...")
-            (alchemyActor ? UrlInfo(url)).mapTo[WebPageTextAnalysis]
-          }
+    val futureWebPageRequestList = collection.find(Json.obj()).sort(Json.obj("requestDate" -> -1)).cursor[WebPageRequest].collect[List]()
 
-          val result = Future.sequence(responses)
-          val futureWebPageTextAnalysisSeq = result map {
-            wepPageTextAnalysisSeq =>
-              play.api.Logger.info("Processing info...")
-              wepPageTextAnalysisSeq
-          }
-
-          val futureValues = futureWebPageTextAnalysisSeq map { webPageTextAnalysisSeq => WebPageTextAnalysisList(webPageTextAnalysisSeq)}
-          futureValues map { values => Ok(Json.toJson(values))}
-
-      }.getOrElse(Future.successful(BadRequest("Invalid json")))
+    val futureWebPageRequestJsonArray = futureWebPageRequestList map { webPageRequestList => Json.arr(webPageRequestList) }
+    futureWebPageRequestJsonArray.map { webPageRequest => Ok(webPageRequest(0)) }
   }
 }

@@ -10,12 +10,16 @@ alchemyApp.config(['$routeProvider',
   function($routeProvider) {
     $routeProvider.
       when('/', {
-        templateUrl: 'assets/partials/alchemy-entities.html',
+        templateUrl: 'assets/partials/analize-web-page.html',
         controller: 'AnalizeWebPageController'
       }).
       when('/analize-web-page', {
-        templateUrl: 'assets/partials/alchemy-entities.html',
+        templateUrl: 'assets/partials/analize-web-page.html',
         controller: 'AnalizeWebPageController'
+      }).
+      when('/web-page-request', {
+        templateUrl: 'assets/partials/web-page-request.html',
+        controller: 'WebPageRequestController'
       }).
       otherwise({
         redirectTo: '/'

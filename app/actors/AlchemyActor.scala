@@ -1,9 +1,8 @@
 package actors
 
 import akka.actor.Actor
-import models.{WebPageTextAnalysis, TextResponse, KeywordsResponse, EntitiesResponse}
+import models._
 import models.AlchemyJsonFormats._
-import org.slf4j.{LoggerFactory, Logger}
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.json.{JsError, JsSuccess}
 import play.api.libs.ws.WS
@@ -28,11 +27,16 @@ class AlchemyActor extends Actor {
     }
   }
 
-  def processInfo(url: String, textResponse : TextResponse, entitiesResponse : EntitiesResponse, keywordsResponse : KeywordsResponse): Future[WebPageTextAnalysis] = {
-    val title = textResponse match {
+  def processInfo(url: String, titleResponse : TitleResponse, textResponse : TextResponse, entitiesResponse : EntitiesResponse, keywordsResponse : KeywordsResponse): Future[WebPageTextAnalysis] = {
+
+    val title = titleResponse match {
+      case TitleResponse(status, None, usage, url, title) => title
+      case TitleResponse(_, Some(statusInfo), _, _, _) => throw new RuntimeException(statusInfo)
+    }
+
+    val text = textResponse match {
       case TextResponse(status, None, usage, url, text) => text
       case TextResponse(_, Some(statusInfo), _, _, _) => throw new RuntimeException(statusInfo)
-      case _ => throw new RuntimeException()
     }
 
     val entities = entitiesResponse match {
@@ -45,7 +49,7 @@ class AlchemyActor extends Actor {
       case KeywordsResponse(_, Some(statusInfo), _, _, _, _) => throw new RuntimeException(statusInfo)
     }
 
-    Future.successful(new WebPageTextAnalysis(url, title, entities, keywords))
+    Future.successful(new WebPageTextAnalysis(url, title, text, entities, keywords))
   }
 
   def processKeywords(url: String): Future[KeywordsResponse] = {
@@ -78,15 +82,33 @@ class AlchemyActor extends Actor {
     }
   }
 
+  def processTitle(url: String): Future[TitleResponse] = {
+    play.api.Logger.info("Retrieving title info from ..." + url)
+    WS.url("http://access.alchemyapi.com/calls/url/URLGetTitle").withQueryString(
+      "apikey" -> "95986d748333af9be9ecc31705253e7a61142d58",
+      "url" -> url,
+      "outputMode" -> "json").get() map {
+      response =>
+        response.json.validate[TitleResponse] match{
+          case JsSuccess(titleResponse, _) => {
+            play.api.Logger.info("Returning title info from ..." + url)
+            titleResponse
+          }
+          case JsError(e) => throw new RuntimeException(e.toString())
+        }
+    }
+  }
+
   def receive = {
     case Num(v) => sender ! (v * 2)
     case UrlInfo(url) => {
       play.api.Logger.info("Retrieving data from ..." + url)
       val futureAnalysisResult = for {
+        titleResponse <- processTitle(url)
         textResponse <- processText(url)
         entitiesResponse <- processEntities(url)
         keywordsResponse <- processKeywords(url)
-        webPageTextAnalysis <- processInfo(url, textResponse, entitiesResponse, keywordsResponse)
+        webPageTextAnalysis <- processInfo(url, titleResponse, textResponse, entitiesResponse, keywordsResponse)
       } yield webPageTextAnalysis
 
       val futureSender = sender
@@ -97,14 +119,5 @@ class AlchemyActor extends Actor {
           futureSender ! analysisResult
       }
     }
-    /*case UrlInfo(url) => {
-      logger.debug("Processing url: " + url)
-      val result = for {
-        textResponse <- processText(url)
-        entitiesResponse <- processEntities(url)
-        keywordsResponse <- processKeywords(url)
-        webPageTextAnalysis <- processInfo(url, textResponse, entitiesResponse, keywordsResponse)
-      } yield sender ! webPageTextAnalysis
-    }*/
   }
 }

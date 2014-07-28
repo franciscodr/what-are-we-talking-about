@@ -1,0 +1,36 @@
+<div class="row" ng-controller="WebPageRequestController">
+    <div class="col-md-2">
+    </div>
+    <div class="col-md-8">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title">Histórico de peticiones realizadas</h3>
+            </div>
+            <table id="webPageRequestList" class="table table-striped">
+                <thead>
+                <tr>
+                    <th>Url</th>
+                    <th>Solicitada en</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr ng-repeat="webPageRequestItem in webPageRequestList">
+                    <td>
+                        {{ webPageRequestItem.url }}
+                    </td>
+                    <td>
+                        {{ webPageRequestItem.requestDate | date: 'dd/MM/yyyy HH:mm:ss' }}
+                    </td>
+                </tr>
+                <tr ng-hide="webPageRequestList.length">
+                    <td colspan="2">
+                        <p class="text-center">No se ha realizado ningún análisis de contenido de páginas Web</p>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="col-md-2">
+    </div>
+</div>
