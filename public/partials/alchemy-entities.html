@@ -1,4 +1,4 @@
-<div class="row">
+<div class="row" ng-repeat="webPageTextAnalysisItem in webPageTextAnalysis.items">
     <div class="col-md-2">
     </div>
     <div class="col-md-8">
@@ -6,13 +6,13 @@
             <div class="panel-heading">
                 <h3 class="panel-title">
                     <a data-toggle="collapse"data-target="#webPageText">
-                        <strong>Contenido de la página localizada en {{ webPageTextAnalysis.url }}</strong>
+                        <strong>Contenido de la página localizada en {{ webPageTextAnalysisItem.url }}</strong>
                     </a>
                 </h3>
             </div>
             <div id="webPageText" class="panel-collapse collapse in">
                 <div class="panel-body">
-                    <p>{{ webPageTextAnalysis.title }}</p>
+                    <p>{{ webPageTextAnalysisItem.title }}</p>
                 </div>
             </div>
         </div>
@@ -67,7 +67,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr ng-repeat="entity in webPageTextAnalysis.entities | filter:entitiesQuery | orderBy:entitiesOrderBy">
+                        <tr ng-repeat="entity in webPageTextAnalysisItem.entities | filter:entitiesQuery | orderBy:entitiesOrderBy">
                             <td>{{entity.text }}<span class="badge pull-right">{{ entity.count }}</span></td>
                             <td><span class="label label-info">{{ entity.type }}</span></td>
                             <td>{{ entity.relevance }}</td>
@@ -122,7 +122,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr ng-repeat="keyword in webPageTextAnalysis.keywords | filter:keywordsQuery | orderBy:keywordsOrderBy">
+                    <tr ng-repeat="keyword in webPageTextAnalysisItem.keywords | filter:keywordsQuery | orderBy:keywordsOrderBy">
                         <td>{{ keyword.text }}</td>
                         <td>{{ keyword.relevance }}</td>
                     </tr>

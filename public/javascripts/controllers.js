@@ -12,7 +12,7 @@ alchemyControllers.controller('AnalizeWebPageController', ['$scope', '$http', '$
     $scope.processForm = function() {
         $scope.errorMessage = null;
         $scope.fetchingData = true;
-        $scope.webPageTextAnalysis = null;
+        $scope.webPageTextAnalysisValues = null;
 
         $http.post('/analize-web-page',$scope.formData)
             .success(function(data) {

@@ -10,4 +10,5 @@ object AlchemyJsonFormats {
   implicit val keywordsResponseFormat = Json.format[KeywordsResponse]
   implicit val textResponseFormat = Json.format[TextResponse]
   implicit val webPageTextAnalysisFormat = Json.format[WebPageTextAnalysis]
+  implicit val webPageTextAnalysisListFormat = Json.format[WebPageTextAnalysisList]
 }
