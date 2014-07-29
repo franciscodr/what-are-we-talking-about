@@ -1,45 +1,34 @@
-<div ng-controller="AnalizeWebPageController">
-    <div class="row">
-        <form id="analyzeWebPage" name="analyzeWebPage" class="form-horizontal" role="form" ng-submit="processForm()" ng-disabled="{{ fetchingData }}" novalidate="novalidate">
-            <legend class="col-md-8 col-md-offset-2">Análisis del contenido de páginas Web</legend>
-            <div class="form-group" ng-class="{'has-error': analyzeWebPage.url.$invalid}">
-                <div class="col-md-8 col-md-offset-2">
-                    <textarea name="url" class="form-control" rows="3" placeholder="Introduce las URL de la páginas Web que quieres analizar separadas por comas" ng-model="formData.url" required="required"></textarea>
-                    <span class="help-block" ng-show="analyzeWebPage.url.$error.required">Required</span>
-                </div>
-            </div>
-            <div class="form-group">
-                <div class="col-md-8 col-md-offset-2 text-right">
-                    <button type="submit" class="btn btn-success" ng-disabled="!analyzeWebPage.$valid || fetchingData">Analizar</button>
-                </div>
-            </div>
-        </form>
-    </div>
-    <div class="row" ng-show="fetchingData">
-        <div class="alert alert-info col-md-8 col-md-offset-2 text-center" role="alert">
-            <h4><span class="glyphicon glyphicon-time"></span> Mientras analizamos el contenido de la página Web, tómate una cervecita a nuestra salud</h4>
-        </div>
-    </div>
-
+<div ng-controller="WebPageRequestDetailController">
     <div class="row" ng-show="errorMessage">
         <div class="alert alert-danger col-md-8 col-md-offset-2" role="alert">
             <span class="glyphicon glyphicon-thumbs-down"></span> Ooooopsss!! Algo ha ido mal y no podemos mostrarte el análisis de la página web indicada
         </div>
     </div>
 
-    <div class="row" ng-show="webPageTextAnalysis" ng-repeat="webPageTextAnalysisItem in webPageTextAnalysis.items">
+    <div class="row" ng-show="webPageRequest" ng-repeat="webPageRequestItem in webPageRequest">
         <div class="col-md-2">
         </div>
         <div class="col-md-8">
+            <h3><span class="glyphicon glyphicon-inbox"></span> Análisis del contenido de {{ webPageRequestItem.url }}</h3>
+            <div class="panel">
+                <div class="text-right">
+                    <div class="btn-group btn-group">
+                        <a class="btn btn-default" href="#/web-page-request" role="button">Volver al histórico de solicitudes</a>
+                    </div>
+                </div>
+            </div>
             <div class="panel panel-primary">
                 <div class="panel-heading">
                     <h3 class="panel-title">
                         <a data-toggle="collapse" data-target="#urlContentAnalysis-{{ $index }}">
-                            <strong>{{ webPageTextAnalysisItem.url }} - {{ webPageTextAnalysisItem.title }}</strong>
+                            <strong>{{ webPageRequestItem.url }} - {{ webPageRequestItem.webPageAnalysis.title }}</strong>
                         </a>
                     </h3>
                 </div>
                 <div id="urlContentAnalysis-{{ $index }}" class="panel-collapse collapse in">
+                    <div class="panel-body">
+                        <p>La solicitud para analizar el contenido de la página Web se realizó el {{ webPageRequestItem.requestDate | date: 'dd/MM/yyyy' }}, a las {{ webPageRequestItem.requestDate | date: 'HH:mm:ss' }}</p>
+                    </div>
                     <div class="alert alert-info" role="alert">
                         <h3 class="panel-title">
                             <a data-toggle="collapse"data-target="#webPageText-{{ $index }}">
@@ -49,7 +38,7 @@
                     </div>
                     <div id="webPageText-{{ $index }}" class="panel-collapse collapse in">
                         <div class="panel-body">
-                            <p>{{ webPageTextAnalysisItem.text }}</p>
+                            <p>{{ webPageRequestItem.webPageAnalysis.text }}</p>
                         </div>
                     </div>
                     <div class="alert alert-info" role="alert">
@@ -102,7 +91,7 @@
                             </tr>
                             </thead>
                             <tbody>
-                            <tr ng-repeat="entity in webPageTextAnalysisItem.entities | filter:entitiesQuery | orderBy:entitiesOrderBy">
+                            <tr ng-repeat="entity in webPageRequestItem.webPageAnalysis.entities | filter:entitiesQuery | orderBy:entitiesOrderBy">
                                 <td>{{entity.text }}<span class="badge pull-right">{{ entity.count }}</span></td>
                                 <td><span class="label label-info">{{ entity.type }}</span></td>
                                 <td>{{ entity.relevance }}</td>
@@ -155,12 +144,19 @@
                             </tr>
                             </thead>
                             <tbody>
-                            <tr ng-repeat="keyword in webPageTextAnalysisItem.keywords | filter:keywordsQuery | orderBy:keywordsOrderBy">
+                            <tr ng-repeat="keyword in webPageRequestItem.webPageAnalysis.keywords | filter:keywordsQuery | orderBy:keywordsOrderBy">
                                 <td>{{ keyword.text }}</td>
                                 <td>{{ keyword.relevance }}</td>
                             </tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="text-right">
+                    <div class="btn-group btn-group">
+                        <a class="btn btn-default" href="#/web-page-request" role="button">Volver al histórico de solicitudes</a>
                     </div>
                 </div>
             </div>

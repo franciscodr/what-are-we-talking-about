@@ -1,5 +1,7 @@
 package models
 
+import play.modules.reactivemongo.json.BSONFormats._
+
 object AlchemyJsonFormats {
   import play.api.libs.json.Json
 

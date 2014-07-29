@@ -17,6 +17,10 @@ alchemyApp.config(['$routeProvider',
         templateUrl: 'assets/partials/analize-web-page.html',
         controller: 'AnalizeWebPageController'
       }).
+      when('/web-page-request/:id', {
+        templateUrl: 'assets/partials/web-page-request-detail.html',
+        controller: 'WebPageRequestDetailController'
+      }).
       when('/web-page-request', {
         templateUrl: 'assets/partials/web-page-request.html',
         controller: 'WebPageRequestController'

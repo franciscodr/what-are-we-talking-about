@@ -14,6 +14,7 @@ import play.api.Play.current
 import play.modules.reactivemongo.MongoController
 import play.modules.reactivemongo.json.collection.JSONCollection
 import reactivemongo.api.Cursor
+import reactivemongo.bson.BSONObjectID
 import scala.concurrent.duration._
 
 import scala.concurrent.Future
@@ -48,7 +49,7 @@ class Alchemy extends Controller with MongoController {
   }
 
   def saveWebPageRequest(webPageTextAnalysis: WebPageTextAnalysis) {
-    val webPageRequest = WebPageRequest(DateTime.now(),webPageTextAnalysis.url,webPageTextAnalysis)
+    val webPageRequest = WebPageRequest(BSONObjectID.generate, DateTime.now(),webPageTextAnalysis.url,webPageTextAnalysis)
     collection.insert(webPageRequest)
   }
 
@@ -79,6 +80,14 @@ class Alchemy extends Controller with MongoController {
   def getWebPageRequest = Action.async {
 
     val futureWebPageRequestList = collection.find(Json.obj()).sort(Json.obj("requestDate" -> -1)).cursor[WebPageRequest].collect[List]()
+
+    val futureWebPageRequestJsonArray = futureWebPageRequestList map { webPageRequestList => Json.arr(webPageRequestList) }
+    futureWebPageRequestJsonArray.map { webPageRequest => Ok(webPageRequest(0)) }
+  }
+
+  def getWebPageRequestDetail(id: String) = Action.async {
+
+    val futureWebPageRequestList = collection.find(Json.obj("_id" -> Json.obj("$oid" -> id))).sort(Json.obj("requestDate" -> -1)).cursor[WebPageRequest].collect[List]()
 
     val futureWebPageRequestJsonArray = futureWebPageRequestList map { webPageRequestList => Json.arr(webPageRequestList) }
     futureWebPageRequestJsonArray.map { webPageRequest => Ok(webPageRequest(0)) }
