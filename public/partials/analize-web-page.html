@@ -1,0 +1,171 @@
+<div ng-controller="AnalizeWebPageController">
+    <div class="row">
+        <form id="analyzeWebPage" name="analyzeWebPage" class="form-horizontal" role="form" ng-submit="processForm()" ng-disabled="{{ fetchingData }}" novalidate="novalidate">
+            <legend class="col-md-8 col-md-offset-2">Análisis del contenido de páginas Web</legend>
+            <div class="form-group" ng-class="{'has-error': analyzeWebPage.url.$invalid}">
+                <div class="col-md-8 col-md-offset-2">
+                    <textarea name="url" class="form-control" rows="3" placeholder="Introduce las URL de la páginas Web que quieres analizar separadas por comas" ng-model="formData.url" required="required"></textarea>
+                    <span class="help-block" ng-show="analyzeWebPage.url.$error.required">Required</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-8 col-md-offset-2 text-right">
+                    <button type="submit" class="btn btn-success" ng-disabled="!analyzeWebPage.$valid || fetchingData">Analizar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="row" ng-show="fetchingData">
+        <div class="alert alert-info col-md-8 col-md-offset-2 text-center" role="alert">
+            <h4><span class="glyphicon glyphicon-time"></span> Mientras analizamos el contenido de la página Web, tómate una cervecita a nuestra salud</h4>
+        </div>
+    </div>
+
+    <div class="row" ng-show="errorMessage">
+        <div class="alert alert-danger col-md-8 col-md-offset-2" role="alert">
+            <span class="glyphicon glyphicon-thumbs-down"></span> Ooooopsss!! Algo ha ido mal y no podemos mostrarte el análisis de la página web indicada
+        </div>
+    </div>
+
+    <div class="row" ng-show="webPageTextAnalysis" ng-repeat="webPageTextAnalysisItem in webPageTextAnalysis.items">
+        <div class="col-md-2">
+        </div>
+        <div class="col-md-8">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title">
+                        <a data-toggle="collapse" data-target="#urlContentAnalysis-{{ $index }}">
+                            <strong>{{ webPageTextAnalysisItem.url }} - {{ webPageTextAnalysisItem.title }}</strong>
+                        </a>
+                    </h3>
+                </div>
+                <div id="urlContentAnalysis-{{ $index }}" class="panel-collapse collapse in">
+                    <div class="alert alert-info" role="alert">
+                        <h3 class="panel-title">
+                            <a data-toggle="collapse"data-target="#webPageText-{{ $index }}">
+                                <strong>Contenido de la página</strong>
+                            </a>
+                        </h3>
+                    </div>
+                    <div id="webPageText-{{ $index }}" class="panel-collapse collapse in">
+                        <div class="panel-body">
+                            <p>{{ webPageTextAnalysisItem.text }}</p>
+                        </div>
+                    </div>
+                    <div class="alert alert-info" role="alert">
+                        <h3 class="panel-title">
+                            <a data-toggle="collapse" data-target="#webPageEntities-{{ $index }}">
+                                <strong>Entidades</strong>
+                            </a>
+                        </h3>
+                    </div>
+                    <div id="webPageEntities-{{ $index }}" class="panel-collapse collapse in">
+                        <div class="panel-body">
+                            <form role="form">
+                                <div class="form-group">
+                                    <div class="input-group">
+                                        <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span></span>
+                                        <input type="text" class="form-control" placeholder="Filtrar entidades" ng-model="entitiesQuery">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <h4>Ordenar por...</h4>
+                                </div>
+                                <div class="form-group">
+                                    <label class="radio-inline col-md-3">
+                                        <input type="radio" name="entitiesOrderBy" value="text" ng-model="entitiesOrderBy"> Entidad
+                                    </label>
+                                    <label class="radio-inline col-md-3">
+                                        <input type="radio" name="entitiesOrderBy" value="type" ng-model="entitiesOrderBy"> Tipo de entidad
+                                    </label>
+                                    <label class="radio-inline col-md-3">
+                                        <input type="radio" name="entitiesOrderBy" value="-relevance" ng-model="entitiesOrderBy"> Relevancia
+                                    </label>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="panel-body">
+                            <p>Named entities specify things such as persons, places and organizations. AlchemyAPI's named entity extraction is capable of identifying people, companies, organizations, cities, geographic features and other typed entities from your HTML, text or web-based content.</p>
+                            <p>Entity extraction can add a wealth of semantic knowledge to your content to help you quickly understand the subject of the text. It is one of the most common starting points for using natural language processing techniques to enrich your content.</p>
+                        </div>
+                        <table class="table">
+                            <colgroup>
+                                <col width="40%" />
+                                <col width="30%" />
+                                <col width="30%" />
+                            </colgroup>
+                            <thead>
+                            <tr>
+                                <th>Entidad</th>
+                                <th align="center">Tipo de entidad</th>
+                                <th align="right">Relevancia</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr ng-repeat="entity in webPageTextAnalysisItem.entities | filter:entitiesQuery | orderBy:entitiesOrderBy">
+                                <td>{{entity.text }}<span class="badge pull-right">{{ entity.count }}</span></td>
+                                <td><span class="label label-info">{{ entity.type }}</span></td>
+                                <td>{{ entity.relevance }}</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="alert alert-info" role="alert">
+                        <h3 class="panel-title">
+                            <a data-toggle="collapse" data-target="#webPageKeywords-{{ $index }}">
+                                <strong>Palabras clave</strong>
+                            </a>
+                        </h3>
+                    </div>
+                    <div id="webPageKeywords-{{ $index }}" class="panel-collapse collapse in">
+                        <div class="panel-body">
+                            <form role="form">
+                                <div class="form-group">
+                                    <div class="input-group">
+                                        <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span></span>
+                                        <input type="text" class="form-control" placeholder="Filtrar palabras claves" ng-model="keywordsQuery">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <h4>Ordenar por...</h4>
+                                </div>
+                                <div class="form-group">
+                                    <label class="radio-inline col-md-5">
+                                        <input type="radio" name="keywordsOrderBy" value="text" ng-model="keywordsOrderBy"> Palabra clave
+                                    </label>
+                                    <label class="radio-inline col-md-5">
+                                        <input type="radio" name="keywordsOrderBy" value="-relevance" ng-model="keywordsOrderBy"> Relevancia
+                                    </label>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="panel-body">
+                            <p>Keywords are the important topics in your content and can be used to index data, generate tag clouds or for searching. AlchemyAPI's keyword extraction API is capable of finding keywords in text and ranking them. The sentiment can then be determined for each extracted keyword.</p>
+                            <p>The keyword extraction API works on URLs, HTML documents and plain text. Just like every other feature, AlchemyAPI automatically detects the language of the content and then performs the appropriate analysis.</p>
+                        </div>
+                        <table class="table">
+                            <colgroup>
+                                <col width="60%" />
+                                <col width="40%" />
+                            </colgroup>
+                            <thead>
+                            <tr>
+                                <th>Palabra clave</th>
+                                <th align="right">Relevancia</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr ng-repeat="keyword in webPageTextAnalysisItem.keywords | filter:keywordsQuery | orderBy:keywordsOrderBy">
+                                <td>{{ keyword.text }}</td>
+                                <td>{{ keyword.relevance }}</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+        </div>
+    </div>
+</div>

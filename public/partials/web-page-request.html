@@ -1,0 +1,51 @@
+<div class="row" ng-controller="WebPageRequestController">
+    <div class="col-md-2">
+    </div>
+    <div class="col-md-8">
+        <h3><span class="glyphicon glyphicon-inbox"></span> Histórico de peticiones <small>({{ webPageRequestList.length }} peticiones realizadas)</small></h3>
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title">Histórico de peticiones realizadas</h3>
+            </div>
+            <div class="panel-body">
+                <strong>Relación de solicitudes para analizar el contenido de páginas Web. Si quieres, puedes consultar el resultado que se obtuvo el día que se realizó el análisis.</strong>
+            </div>
+            <table id="webPageRequestList" class="table table-striped">
+                <colgroup>
+                    <col width="50%" />
+                    <col width="30%" />
+                    <col width="20%" />
+                </colgroup>
+                <thead>
+                <tr>
+                    <th>Url</th>
+                    <th>Solicitada en</th>
+                    <th>Consultar</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr ng-repeat="webPageRequestItem in webPageRequestList">
+                    <td>
+                        {{ webPageRequestItem.url }}
+                    </td>
+                    <td>
+                        {{ webPageRequestItem.requestDate | date: 'dd/MM/yyyy HH:mm:ss' }}
+                    </td>
+                    <td>
+                        <a href="#/web-page-request/{{ webPageRequestItem._id.$oid }}">
+                            <span class="glyphicon glyphicon-search"></span> Consultar solicitud
+                        </a>
+                    </td>
+                </tr>
+                <tr ng-hide="webPageRequestList.length">
+                    <td colspan="2">
+                        <p class="text-center">No se ha realizado ningún análisis de contenido de páginas Web</p>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="col-md-2">
+    </div>
+</div>
