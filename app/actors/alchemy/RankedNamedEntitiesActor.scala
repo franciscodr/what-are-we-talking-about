@@ -26,12 +26,9 @@ class RankedNamedEntitiesActor extends Actor {
     }
 
     futureEntitiesResponse map {
-      entitiesResponse =>
-        entitiesResponse match {
-          case EntitiesResponse(status, None, usage, url, language, Some(entities)) => entities.sortWith((a,b) => a.count > b.count )
-          case EntitiesResponse(_, Some(statusInfo), _, _, _, _) => throw new RuntimeException(statusInfo)
-        }
-      }
+      case EntitiesResponse(status, None, usage, url, language, Some(entities)) => entities.sortWith((a, b) => a.count > b.count)
+      case EntitiesResponse(_, Some(statusInfo), _, _, _, _) => throw new RuntimeException(statusInfo)
+    }
   }
 
   def receive = {
